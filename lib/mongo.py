@@ -3,13 +3,13 @@ from datetime import datetime
 import certifi
 import os
 import streamlit as st
-
+from pymongo import MongoClient
 # -----------------------------
 # CONFIG
 # -----------------------------
-MONGO_URI = os.getenv("MONGO_URI")  # 🔹 Replace with your MongoDB Atlas connection string
-DATABASE_NAME = os.getenv("DATABASE_NAME")
-COLLECTION_NAME = os.getenv("COLLECTION_NAME")
+MONGO_URI = st.secrets["MONGO_URI"]
+DATABASE_NAME = st.secrets["DATABASE_NAME"]
+COLLECTION_NAME = st.secrets["COLLECTION_NAME"]
 
 # -----------------------------
 # CONNECTION (Singleton Style)
