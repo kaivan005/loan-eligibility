@@ -84,5 +84,57 @@ def call_ml_model(form_data: dict):
 
     return SimpleNamespace(
         eligible=bool(prediction),
-        score=score
+        score=score,
     )
+
+
+def get_rejection_reasons(form_data: dict) -> list[str]:
+    """Return human-readable rejection reasons derived from the form inputs."""
+    reasons = []
+
+    credit_history = form_data.get("creditHistory", "No")
+    if credit_history == "No":
+        reasons.append(
+            "No credit history — lenders require a proven repayment track record."
+        )
+
+    applicant_income = float(form_data.get("applicantIncome", 0) or 0)
+    coapplicant_income = float(form_data.get("coapplicantIncome", 0) or 0)
+    total_income = applicant_income + coapplicant_income
+    loan_amount = float(form_data.get("loanAmount", 0) or 0)
+
+    if total_income > 0:
+        loan_to_income = loan_amount / total_income
+        if loan_to_income > 5:
+            reasons.append(
+                f"Loan-to-income ratio is too high ({loan_to_income:.1f}x) — "
+                "recommended under 5× annual income."
+            )
+    else:
+        reasons.append("No income information provided — income is required for assessment.")
+
+    if total_income < 120_000:
+        reasons.append(
+            "Total annual income is below the minimum threshold for the requested loan amount."
+        )
+
+    if form_data.get("education") == "Below Graduate" and total_income < 200_000:
+        reasons.append(
+            "Below-graduate education combined with lower income reduces approval likelihood."
+        )
+
+    try:
+        term = int(form_data.get("loanAmountTerm", 360) or 360)
+        if term < 60:
+            reasons.append(
+                "Short loan term increases monthly obligations beyond acceptable limits."
+            )
+    except (ValueError, TypeError):
+        pass
+
+    if not reasons:
+        reasons.append(
+            "Overall financial profile does not meet the minimum eligibility criteria at this time."
+        )
+
+    return reasons

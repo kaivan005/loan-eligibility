@@ -1,17 +1,41 @@
-import streamlit as st
 import base64
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
+
+import streamlit as st
+
+from lib.auth import bootstrap_user_session, get_auth_token
 
 def get_base64_image(image_path):
     with open(image_path, "rb") as img_file:
         return base64.b64encode(img_file.read()).decode()
 
+
+def _with_auth_token(href: str, token: str) -> str:
+    if not token or not href.startswith("/"):
+        return href
+
+    parsed = urlparse(href)
+    existing = dict(parse_qsl(parsed.query, keep_blank_values=True))
+    existing["auth_token"] = token
+    return urlunparse(
+        (parsed.scheme, parsed.netloc, parsed.path, parsed.params, urlencode(existing), parsed.fragment)
+    )
+
+
 def navbar(cta_href: str, cta_label: str, nav_links: list[tuple[str, str]] | None = None, active_page: str = ""):
+    bootstrap_user_session()
+    token = get_auth_token()
+
     links_markup = ""
     nav_links = nav_links or []
     for label, href in nav_links:
         active_class = " nav-active" if href == active_page else ""
-        links_markup += f"<a class='nav-link{active_class}' href='{href}' target='_self'>{label}</a>"
+        links_markup += f"<a class='nav-link{active_class}' href='{_with_auth_token(href, token)}' target='_self'>{label}</a>"
+
     logo_base64 = get_base64_image("assets/logo.png")
+    account_button = "<a href='/Login' class='gradient-button'>Login / Register</a>"
+    if st.session_state.get("user_logged_in"):
+        account_button = f"<a href='{_with_auth_token('/UserDashboard', token)}' class='gradient-button'>Profile</a>"
 
     st.markdown(
         f"""
@@ -26,7 +50,7 @@ def navbar(cta_href: str, cta_label: str, nav_links: list[tuple[str, str]] | Non
             </div>
             <div class='nav-links'>{links_markup}</div>
             <div>
-              <a href='admin_login' class='gradient-button'>Admin Login</a>
+              {account_button}
             </div>
           </div>
         </div>
@@ -46,6 +70,9 @@ def hide_streamlit_chrome(hide_sidebar: bool = True, hide_header: bool = True):
 
 
 def hero(title_lines: tuple[str, str], subtitle: str, primary: tuple[str, str], secondary: tuple[str, str]):
+    bootstrap_user_session()
+    token = get_auth_token()
+
     title_1, title_2 = title_lines
     prim_label, prim_href = primary
     sec_label, sec_href = secondary
@@ -56,8 +83,8 @@ def hero(title_lines: tuple[str, str], subtitle: str, primary: tuple[str, str], 
           <h1 class='section-title'>{title_1}<br/><span style='background:linear-gradient(90deg,#0d9488,#2563eb);-webkit-background-clip:text;background-clip:text;color:transparent;'>{title_2}</span></h1>
           <p class='subtitle'>{subtitle}</p>
           <div class='hero-actions'>
-            <a href='{prim_href}' class='gradient-button'>{prim_label}</a>
-            <a href='{sec_href}' class='button-outline'>{sec_label}</a>
+            <a href='{_with_auth_token(prim_href, token)}' class='gradient-button'>{prim_label}</a>
+            <a href='{_with_auth_token(sec_href, token)}' class='button-outline'>{sec_label}</a>
           </div>
         </div>
         """,
@@ -70,6 +97,9 @@ def section_title(text: str):
 
 
 def cta(title: str, message: str, primary: tuple[str, str], secondary: tuple[str, str]):
+    bootstrap_user_session()
+    token = get_auth_token()
+
     prim_label, prim_href = primary
     sec_label, sec_href = secondary
     st.markdown(
@@ -78,8 +108,8 @@ def cta(title: str, message: str, primary: tuple[str, str], secondary: tuple[str
           <h3 style='margin:0 0 8px;'>{title}</h3>
           <p style='opacity:0.9;'>{message}</p>
           <div style='display:flex;gap:12px;justify-content:center;margin-top:12px;flex-wrap:wrap;'>
-            <a href='{prim_href}' class='gradient-button' style='background:white;color:#0d9488;'>{prim_label}</a>
-            <a href='{sec_href}' class='gradient-button' style='border:2px solid white;background:transparent;color:white;'>{sec_label}</a>
+            <a href='{_with_auth_token(prim_href, token)}' class='gradient-button' style='background:white;color:#0d9488;'>{prim_label}</a>
+            <a href='{_with_auth_token(sec_href, token)}' class='gradient-button' style='border:2px solid white;background:transparent;color:white;'>{sec_label}</a>
           </div>
         </div>
         """,
@@ -88,8 +118,19 @@ def cta(title: str, message: str, primary: tuple[str, str], secondary: tuple[str
 
 
 def footer():
+    bootstrap_user_session()
+    token = get_auth_token()
+
+    home_href = _with_auth_token("/", token)
+    app_href = _with_auth_token("/Application", token)
+    eligibility_href = _with_auth_token("/Eligibility", token)
+    calculator_href = _with_auth_token("/Calculator", token)
+    credit_href = _with_auth_token("/CreditAssistance", token)
+    help_href = _with_auth_token("/Help", token)
+    about_href = _with_auth_token("/About", token)
+
     st.markdown(
-        """
+        f"""
         <div class='footer'>
           <div class='container footer-inner'>
             <div class='footer-col'>
@@ -98,16 +139,16 @@ def footer():
             </div>
             <div class='footer-col'>
               <h4>Quick Links</h4>
-              <a class='footer-link' href='/'>Home</a>
-              <a class='footer-link' href='/Application'>Application</a>
-              <a class='footer-link' href='/Eligibility'>Eligibility</a>
-              <a class='footer-link' href='/Calculator'>Calculator</a>
+              <a class='footer-link' href='{home_href}'>Home</a>
+              <a class='footer-link' href='{app_href}'>Application</a>
+              <a class='footer-link' href='{eligibility_href}'>Eligibility</a>
+              <a class='footer-link' href='{calculator_href}'>Calculator</a>
             </div>
             <div class='footer-col'>
               <h4>Resources</h4>
-              <a class='footer-link' href='/CreditAssistance'>Credit Assistance</a>
-              <a class='footer-link' href='/Help'>Help Center</a>
-              <a class='footer-link' href='/About'>About</a>
+              <a class='footer-link' href='{credit_href}'>Credit Assistance</a>
+              <a class='footer-link' href='{help_href}'>Help Center</a>
+              <a class='footer-link' href='{about_href}'>About</a>
             </div>
             <div class='footer-col'>
               <h4>Contact</h4>
@@ -118,11 +159,11 @@ def footer():
           </div>
         </div>
         <style>
-          .footer { margin-top: 48px; padding: 32px 24px; background: #374151; color: #f3f4f6; }
-          .footer-inner { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 24px; align-items: flex-start; }
-          .footer-col h4 { margin: 0 0 12px; font-size: 16px; font-weight: 700; color: #ffffff; }
-          .footer-link { display: block; color: #d1d5db; text-decoration: none; margin: 6px 0; font-size: 14px; }
-          .footer-link:hover { color: #ffffff; text-decoration: underline; }
+          .footer {{ margin-top: 48px; padding: 32px 24px; background: #374151; color: #f3f4f6; }}
+          .footer-inner {{ max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 24px; align-items: flex-start; }}
+          .footer-col h4 {{ margin: 0 0 12px; font-size: 16px; font-weight: 700; color: #ffffff; }}
+          .footer-link {{ display: block; color: #d1d5db; text-decoration: none; margin: 6px 0; font-size: 14px; }}
+          .footer-link:hover {{ color: #ffffff; text-decoration: underline; }}
         </style>
         """,
         unsafe_allow_html=True,
