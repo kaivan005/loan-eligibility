@@ -33,16 +33,22 @@ nav_links = [
 ]
 ui.navbar(cta_href="/Eligibility", cta_label="Check Eligibility", nav_links=nav_links, active_page="/Admin")
 
-_, logout_col = st.columns([10, 1])
-with logout_col:
-    if st.button("Logout", key="admin_logout"):
+col_spacer, col_logout = st.columns([10, 1])
+with col_logout:
+    if st.button("🚪 Logout", key="admin_logout", type="secondary"):
         st.session_state["admin_logged_in"] = False
         st.switch_page("pages/11_Login.py")
 
-st.markdown("<br>", unsafe_allow_html=True)
-st.title("Admin Dashboard")
-st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-st.divider()
+st.markdown("""
+<div style='background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%); padding: 32px 24px; border-radius: 16px; margin: 24px 0;'>
+    <div style='color: white;'>
+        <h1 style='font-size: 32px; margin: 0 0 4px;'>⚙️ Admin Dashboard</h1>
+        <p style='font-size: 14px; opacity: 0.9; margin: 0;'>System overview and management interface</p>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+st.markdown("<div style='margin-bottom: 24px;'></div>", unsafe_allow_html=True)
 
 def _clean_eligibility(records):
     rows = []
@@ -96,50 +102,95 @@ try:
 
     c1, c2, c3, c4 = st.columns(4)
     with c1:
-        st.markdown(f"""<div class="admin-card"><div class="admin-sub">Total Checks</div>
-            <div class="metric-number">{len(all_eligibility)}</div></div>""", unsafe_allow_html=True)
+        st.markdown(f"""
+            <div style='background: linear-gradient(135deg, #3b82f6, #1e40af); border-radius: 12px; padding: 20px; color: white; text-align: center;'>
+                <div style='font-size: 24px; font-weight: bold;'>📋</div>
+                <div style='font-size: 12px; opacity: 0.9; margin-top: 8px;'>TOTAL CHECKS</div>
+                <div style='font-size: 28px; font-weight: bold; margin-top: 8px;'>{len(all_eligibility)}</div>
+            </div>
+        """, unsafe_allow_html=True)
     with c2:
-        st.markdown(f"""<div class="admin-card"><div class="admin-sub">Approved</div>
-            <div class="metric-number" style="color:#22c55e;">{len(approved)}</div></div>""", unsafe_allow_html=True)
+        st.markdown(f"""
+            <div style='background: linear-gradient(135deg, #10b981, #059669); border-radius: 12px; padding: 20px; color: white; text-align: center;'>
+                <div style='font-size: 24px; font-weight: bold;'>✅</div>
+                <div style='font-size: 12px; opacity: 0.9; margin-top: 8px;'>APPROVED</div>
+                <div style='font-size: 28px; font-weight: bold; margin-top: 8px;'>{len(approved)}</div>
+            </div>
+        """, unsafe_allow_html=True)
     with c3:
-        st.markdown(f"""<div class="admin-card"><div class="admin-sub">Rejected</div>
-            <div class="metric-number" style="color:#ef4444;">{len(rejected)}</div></div>""", unsafe_allow_html=True)
+        st.markdown(f"""
+            <div style='background: linear-gradient(135deg, #ef4444, #dc2626); border-radius: 12px; padding: 20px; color: white; text-align: center;'>
+                <div style='font-size: 24px; font-weight: bold;'>❌</div>
+                <div style='font-size: 12px; opacity: 0.9; margin-top: 8px;'>REJECTED</div>
+                <div style='font-size: 28px; font-weight: bold; margin-top: 8px;'>{len(rejected)}</div>
+            </div>
+        """, unsafe_allow_html=True)
     with c4:
-        st.markdown(f"""<div class="admin-card"><div class="admin-sub">Registered Users</div>
-            <div class="metric-number" style="color:#3b82f6;">{len(all_users)}</div></div>""", unsafe_allow_html=True)
+        st.markdown(f"""
+            <div style='background: linear-gradient(135deg, #f59e0b, #d97706); border-radius: 12px; padding: 20px; color: white; text-align: center;'>
+                <div style='font-size: 24px; font-weight: bold;'>👥</div>
+                <div style='font-size: 12px; opacity: 0.9; margin-top: 8px;'>USERS</div>
+                <div style='font-size: 28px; font-weight: bold; margin-top: 8px;'>{len(all_users)}</div>
+            </div>
+        """, unsafe_allow_html=True)
 
-    st.divider()
+    st.markdown("<div style='margin-bottom: 24px;'></div>", unsafe_allow_html=True)
 
-    tab_elig, tab_users, tab_feedback = st.tabs(["📋 Eligibility Checks", "👥 Users", "💬 Feedbacks"])
+    st.markdown("<h2 style='color: #1e293b; margin-top: 0;'>📊 System Data</h2>", unsafe_allow_html=True)
+
+    tab_elig, tab_users, tab_feedback = st.tabs(["📋 Eligibility Checks", "👥 Registered Users", "💬 User Feedback"])
 
     with tab_elig:
-        st.markdown("#### ✅ Approved Loans")
-        if approved:
-            st.dataframe(_clean_eligibility(approved), use_container_width=True, height=380)
-            st.caption(f"Total approved: {len(approved)}")
+        st.markdown("<p style='color: #6b7280; margin-bottom: 16px;'>All eligibility checks with applicant details, scores, and decisions</p>", unsafe_allow_html=True)
+        
+        col_filter1, col_filter2 = st.columns(2)
+        with col_filter1:
+            status_filter = st.selectbox("Filter by status", ["All", "Approved", "Rejected"], key="elig_status")
+        with col_filter2:
+            st.markdown("")
+        
+        if status_filter == "Approved":
+            display_elig = approved
+        elif status_filter == "Rejected":
+            display_elig = rejected
         else:
-            st.info("No approved loans yet.")
-        st.divider()
-        st.markdown("#### ❌ Rejected / Requires Review")
-        if rejected:
-            st.dataframe(_clean_eligibility(rejected), use_container_width=True, height=380)
-            st.caption(f"Total rejected: {len(rejected)}")
+            display_elig = all_eligibility
+        
+        if display_elig:
+            df_elig = _clean_eligibility(display_elig)
+            st.dataframe(df_elig, use_container_width=True, height=500)
+            st.caption(f"📊 Showing {len(display_elig)} of {len(all_eligibility)} records | "
+                      f"✅ {len(approved)} approved | ❌ {len(rejected)} rejected")
         else:
-            st.info("No rejections yet.")
+            st.info("No eligibility checks found for the selected filter.")
 
     with tab_users:
-        st.markdown(f"#### Registered Users ({len(all_users)} total)")
+        st.markdown(f"<p style='color: #6b7280; margin-bottom: 16px;'>All registered users and their account information</p>", unsafe_allow_html=True)
+        
         if all_users:
-            st.dataframe(_clean_users(all_users), use_container_width=True, height=500)
+            df_users = _clean_users(all_users)
+            st.dataframe(df_users, use_container_width=True, height=500)
+            st.caption(f"📊 Total registered users: {len(all_users)}")
         else:
             st.info("No registered users yet.")
 
     with tab_feedback:
-        st.markdown(f"#### All User Feedbacks ({len(all_feedbacks)} total)")
+        st.markdown(f"<p style='color: #6b7280; margin-bottom: 16px;'>All user feedback and ratings</p>", unsafe_allow_html=True)
+        
         if all_feedbacks:
-            st.dataframe(_clean_feedback(all_feedbacks), use_container_width=True, height=500)
-            avg = sum(f.get("rating", 0) for f in all_feedbacks) / len(all_feedbacks)
-            st.caption(f"Average rating: {avg:.1f} / 5")
+            df_feedback = _clean_feedback(all_feedbacks)
+            
+            col_stat1, col_stat2, col_stat3 = st.columns(3)
+            with col_stat1:
+                st.metric("Total Feedback", len(all_feedbacks))
+            with col_stat2:
+                avg_rating = sum(f.get("rating", 0) for f in all_feedbacks) / len(all_feedbacks)
+                st.metric("Average Rating", f"{avg_rating:.1f}/5")
+            with col_stat3:
+                five_star = sum(1 for f in all_feedbacks if f.get("rating") == 5)
+                st.metric("5-Star Ratings", five_star)
+            
+            st.dataframe(df_feedback, use_container_width=True, height=400)
         else:
             st.info("No feedbacks submitted yet.")
 

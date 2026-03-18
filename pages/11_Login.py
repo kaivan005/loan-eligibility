@@ -25,13 +25,23 @@ bootstrap_user_session()
 if st.session_state.get("user_logged_in"):
     st.switch_page("pages/12_UserDashboard.py")
 
-st.title("Login")
-st.caption("One login form for both user and admin")
+st.markdown("""
+<div style='text-align:center; padding: 24px 0;'>
+    <h1 style='font-size: 36px; color: #111827; margin: 0 0 8px;'>Login</h1>
+</div>
+""", unsafe_allow_html=True)
+
+st.markdown("<div style='max-width: 420px; margin: 0 auto;'>", unsafe_allow_html=True)
 
 with st.form("unified_login_form"):
-    identifier = st.text_input("Email or Username")
-    password = st.text_input("Password", type="password")
-    submitted = st.form_submit_button("Login", type="primary", use_container_width=True)
+    identifier = st.text_input(
+        "Username",
+        placeholder="Username",
+        help="Enter your username"
+    )
+    password = st.text_input("Password", type="password", placeholder="••••••••")
+    st.markdown("")
+    submitted = st.form_submit_button("🔓 Login", type="primary", use_container_width=True)
 
 if submitted:
     entered_id = identifier.strip()
@@ -41,24 +51,43 @@ if submitted:
     if entered_id == admin_user and password == admin_pass:
         st.session_state["admin_logged_in"] = True
         record_admin_login(identifier=entered_id, success=True)
-        st.success("Admin login successful.")
+        st.success("✓ Admin login successful!")
         st.switch_page("pages/9_Admin.py")
     else:
         user = authenticate_user(entered_id, password)
         if user:
             login_user(user)
-            st.success("Login successful.")
+            st.success("✓ Login successful!")
             st.switch_page("pages/12_UserDashboard.py")
         else:
             if entered_id == admin_user:
                 record_admin_login(identifier=entered_id, success=False)
-            st.error("Invalid credentials.")
+            st.error("❌ Invalid email/username or password.")
 
-st.info("New user? Please register first.")
-st.page_link("pages/10_Register.py", label="Create Account", icon="📝")
+st.markdown("")
+st.markdown(
+    """<div style='background: linear-gradient(135deg, #f0fdf4, #dcfce7); border: 2px solid #86efac; 
+    border-radius: 14px; padding: 16px; text-align: center;'>
+    <strong style='color: #166534;'>New user?</strong><br/>
+    <span style='color: #4b5563; font-size: 14px;'>Create an account to get started with LoanIQ</span>
+    </div>""",
+    unsafe_allow_html=True,
+)
+st.markdown("")
 
-c1, c2 = st.columns(2)
-with c1:
-    st.page_link("pages/10_Register.py", label="Register", icon="📝")
-with c2:
-    st.page_link("app.py", label="Back to Home", icon="🏠")
+col1, col3 = st.columns([1, 1])
+with col1:
+    if st.button("📝 Register", use_container_width=True, key="goto_register"):
+        st.switch_page("pages/10_Register.py")
+with col3:
+    if st.button("🏠 Home", use_container_width=True, key="goto_home"):
+        st.switch_page("app.py")
+
+st.markdown("</div>", unsafe_allow_html=True)
+
+st.markdown(
+    """<div style='text-align: center; margin-top: 48px; padding-top: 24px; border-top: 1px solid #e5e7eb; color: #9ca3af; font-size: 12px;'>
+    <p style='margin: 0;'>© 2026 LoanIQ. All rights reserved.</p>
+    </div>""",
+    unsafe_allow_html=True,
+)
