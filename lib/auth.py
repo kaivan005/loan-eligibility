@@ -3,7 +3,6 @@ from __future__ import annotations
 import hashlib
 import secrets
 from typing import Any
-
 import streamlit as st
 
 from lib.mongo import (
@@ -20,9 +19,10 @@ def _hash_password(password: str) -> str:
     return hashlib.sha256(password.encode("utf-8")).hexdigest()
 
 
-def register_user(full_name: str, email: str, password: str) -> tuple[bool, str]:
+def register_user(full_name: str, email: str, gender: str, marital: str, no_of_dependents: int, self_employed: str, applicant_income: str, co_applicant_income: str, credit_history: str, property_area: str, password: str) -> tuple[bool, str]:
     full_name = full_name.strip()
     normalized_email = email.strip().lower()
+    marital= "Yes" if marital not in ["Single", "Divorced"] else "No"
 
     if not full_name:
         return False, "Full name is required."
@@ -34,9 +34,10 @@ def register_user(full_name: str, email: str, password: str) -> tuple[bool, str]
     try:
         if find_user_by_email(normalized_email):
             return False, "An account with this email already exists."
-        create_user(full_name=full_name, email=normalized_email, password_hash=_hash_password(password))
+        create_user(full_name=full_name, email=normalized_email, password_hash=_hash_password(password), gender=gender, marital=marital, no_of_dependents=no_of_dependents, self_employed=self_employed, applicant_income=applicant_income, co_applicant_income=co_applicant_income, credit_history=credit_history, property_area=property_area)
         return True, "Registration successful."
-    except Exception:
+    except Exception as e:
+        print("Error during user registration:", str(e))
         return False, "Unable to register right now. Please try again."
 
 
@@ -49,7 +50,18 @@ def authenticate_user(email: str, password: str) -> dict[str, Any] | None:
         if user and user.get("password_hash") == password_hash:
             update_user_last_login(normalized_email)
             record_login_event(normalized_email, role="user", success=True)
-            return {"full_name": user.get("full_name", ""), "email": user.get("email", normalized_email)}
+            return {
+                "full_name": user.get("full_name", ""),
+                "email": user.get("email", normalized_email),
+                "gender": user.get("gender", ""),
+                "marital": user.get("marital", ""),
+                "no_of_dependents": user.get("no_of_dependents", ""),
+                "self_employed": user.get("self_employed", ""),
+                "applicant_income": user.get("applicant_income", ""),
+                "co_applicant_income": user.get("co_applicant_income", ""),
+                "credit_history": user.get("credit_history", ""),
+                "property_area": user.get("property_area", ""),
+            }
         record_login_event(normalized_email, role="user", success=False)
     except Exception:
         return None
@@ -86,6 +98,14 @@ def login_user(user: dict[str, Any]) -> None:
     st.session_state["current_user"] = {
         "full_name": user.get("full_name", ""),
         "email": email,
+        "gender": user.get("gender", ""),
+        "marital": user.get("marital", ""),
+        "no_of_dependents": user.get("no_of_dependents", ""),
+        "self_employed": user.get("self_employed", ""),
+        "applicant_income": user.get("applicant_income", ""),
+        "co_applicant_income": user.get("co_applicant_income", ""),
+        "credit_history": user.get("credit_history", ""),
+        "property_area": user.get("property_area", ""),
     }
     st.session_state["auth_token"] = token
     if token:
@@ -131,6 +151,14 @@ def bootstrap_user_session() -> None:
     st.session_state["current_user"] = {
         "full_name": user.get("full_name", ""),
         "email": user.get("email", ""),
+        "gender": user.get("gender", ""),
+        "marital": user.get("marital", ""),
+        "no_of_dependents": user.get("no_of_dependents", ""),
+        "self_employed": user.get("self_employed", ""),
+        "applicant_income": user.get("applicant_income", ""),
+        "co_applicant_income": user.get("co_applicant_income", ""),
+        "credit_history": user.get("credit_history", ""),
+        "property_area": user.get("property_area", ""),
     }
     st.session_state["auth_token"] = token
 

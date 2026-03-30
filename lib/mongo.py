@@ -50,11 +50,25 @@ def get_all_eligibility():
     return list(collection.find().sort("created_at", -1))
 
 
+def get_eligibility_by_date_range(start_at: datetime, end_at: datetime) -> list[dict]:
+    """Returns eligibility records where created_at is within [start_at, end_at]."""
+    return list(
+        collection.find(
+            {
+                "created_at": {
+                    "$gte": start_at,
+                    "$lte": end_at,
+                }
+            }
+        ).sort("created_at", -1)
+    )
+
+
 def find_user_by_email(email: str) -> dict | None:
     return users_collection.find_one({"email": email.strip().lower()})
 
 
-def create_user(full_name: str, email: str, password_hash: str) -> None:
+def create_user(full_name: str, email: str, password_hash: str, gender: str, marital: str, no_of_dependents: int, self_employed: str, applicant_income: str, co_applicant_income: str, credit_history: str, property_area: str) -> None:
     users_collection.insert_one(
         {
             "full_name": full_name.strip(),
@@ -63,6 +77,14 @@ def create_user(full_name: str, email: str, password_hash: str) -> None:
             "created_at": datetime.utcnow(),
             "last_login_at": None,
             "session_token": None,
+            "gender": gender,
+            "marital": marital,
+            "no_of_dependents": no_of_dependents,
+            "self_employed": self_employed,
+            "applicant_income": applicant_income,
+            "co_applicant_income": co_applicant_income,
+            "credit_history": credit_history,
+            "property_area": property_area,
         }
     )
 
@@ -113,10 +135,37 @@ def get_all_feedback() -> list[dict]:
     return list(feedback_collection.find().sort("created_at", -1))
 
 
+def get_feedback_by_date_range(start_at: datetime, end_at: datetime) -> list[dict]:
+    return list(
+        feedback_collection.find(
+            {
+                "created_at": {
+                    "$gte": start_at,
+                    "$lte": end_at,
+                }
+            }
+        ).sort("created_at", -1)
+    )
+
+
 def get_all_users() -> list[dict]:
     return list(
         users_collection.find(
             {}, {"password_hash": 0, "session_token": 0}
+        ).sort("created_at", -1)
+    )
+
+
+def get_users_by_date_range(start_at: datetime, end_at: datetime) -> list[dict]:
+    return list(
+        users_collection.find(
+            {
+                "created_at": {
+                    "$gte": start_at,
+                    "$lte": end_at,
+                }
+            },
+            {"password_hash": 0, "session_token": 0},
         ).sort("created_at", -1)
     )
 

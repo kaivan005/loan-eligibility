@@ -46,11 +46,14 @@ with col1:
     current_user = get_current_user() or {}
     is_user_logged_in = bool(st.session_state.get("user_logged_in") and current_user.get("email"))
 
+    def select_index(options: list[str], value: str, fallback: int = 0) -> int:
+        return options.index(value) if value in options else fallback
+
     if not is_user_logged_in:
         st.info("You can browse the website, but eligibility check requires registration and login.")
     
     # Basic Information
-    fullName = st.text_input("Full Name", "", placeholder="Enter applicant name")
+    fullName = st.text_input("Full Name",value=(current_user.get("full_name") if is_user_logged_in else ""),placeholder="Enter applicant name")
     email = st.text_input(
         "Email",
         value=current_user.get("email", "") if is_user_logged_in else "",
@@ -60,18 +63,18 @@ with col1:
 
     gender = st.selectbox(
         "Gender",
-        ["Select Gender", "Male", "Female", "Other"],
-        index=0,
+        (gender_options := ["Select Gender", "Male", "Female", "Other"]),
+        index=select_index(gender_options, current_user.get("gender", "")) if is_user_logged_in else 0,
         accept_new_options=False,
     )
 
     married = st.selectbox(
         "Marital Status",
-        ["Select Marital Status", "Yes", "No"],
-        index=0,
+        (marital_options := ["Select Marital Status", "Yes", "No"]),
+        index=select_index(marital_options, current_user.get("marital", "")) if is_user_logged_in else 0,
     )
 
-    dependents_raw = st.text_input("Number of Dependents", "", placeholder="e.g., 0, 1, 2")
+    dependents_raw = st.text_input("Number of Dependents",value=current_user.get("no_of_dependents", "") if is_user_logged_in else "",placeholder="e.g., 0, 1, 2")
     
     # Education & Employment
     education = st.selectbox(
@@ -81,13 +84,13 @@ with col1:
     )
     self_employed = st.selectbox(
         "Self Employed",
-        ["Select Employment Type", "Yes", "No"],
-        index=0,
+        (employment_options := ["Select Employment Type", "Yes", "No"]),
+        index=select_index(employment_options, current_user.get("self_employed", "")) if is_user_logged_in else 0,
     )
     
     # Income Information (no default values shown)
-    applicant_income_raw = st.text_input("Applicant Income (Annual - ₹)", "", placeholder="e.g., 750000")
-    coapplicant_income_raw = st.text_input("Co-applicant Income (Annual - ₹)", "", placeholder="e.g., 250000")
+    applicant_income_raw = st.text_input("Applicant Income (Annual - ₹)" ,value=current_user.get("applicant_income", "") if is_user_logged_in else "",placeholder="e.g., 750000")
+    coapplicant_income_raw = st.text_input("Co-applicant Income (Annual - ₹)",value=(current_user.get("co_applicant_income", "") if is_user_logged_in else ""),placeholder="e.g., 250000")
     
     # Loan Details
     loan_amount_raw = st.text_input("Loan Amount (₹)", "", placeholder="e.g., 1500000 (will be scaled to thousands for the model)")
@@ -96,14 +99,15 @@ with col1:
     # Credit & Property
     credit_history = st.selectbox(
         "Credit History Available",
-        ["Select Credit History", "Yes", "No"],
-        index=0,
+        (credit_history_options := ["Select Credit History", "Yes", "No"]),
+        index=select_index(credit_history_options, current_user.get("credit_history", "")) if is_user_logged_in else 0,
         help="Does applicant have credit history (1) or not (0)",
     )
     property_area = st.selectbox(
         "Property Area",
-        ["Select Property Area", "Urban", "Rural", "Semiurban"],
-        index=0,accept_new_options=False
+        (property_options := ["Select Property Area", "Urban", "Rural", "Semiurban"]),
+        index=select_index(property_options, current_user.get("property_area", "")) if is_user_logged_in else 0,
+        accept_new_options=False
     )
 
     if st.button("Check Eligibility", type="primary", use_container_width=True):

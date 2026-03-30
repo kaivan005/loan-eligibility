@@ -31,6 +31,15 @@ st.markdown("<div style='max-width: 420px; margin: 0 auto;'>", unsafe_allow_html
 with st.form("register_form"):
     full_name = st.text_input("Full Name", placeholder="Your full name")
     email = st.text_input("Email Address", placeholder="you@example.com")
+    gender = st.selectbox("Gender",["Select Gender", "Male", "Female", "Other"],index=0)
+    marital = st.selectbox("Marital Status",["Select Marital Status", "Single", "Married", "Divorced"],index=0)
+    no_of_dependents = st.text_input("Number of Dependents", placeholder="Enter number of dependents", help="Enter 0 if none")
+    self_employed = st.selectbox("Self Employed",["Select Employment Type", "Yes", "No"],index=0,)
+    applicant_income = st.text_input("Applicant Income", placeholder="Enter your monthly income")
+    co_applicant_income = st.text_input("Co-Applicant Income", placeholder="Enter co-applicant's monthly income")
+    credit_history = st.selectbox("Credit History Available", ["Select Credit History", "Yes", "No"], index=0)
+    property_area= st.selectbox("Property Area", ["Select Property Area", "Rural", "Urban"], index=0)
+
     password = st.text_input("Password", type="password", placeholder="Minimum 6 characters", help="At least 6 characters")
     confirm_password = st.text_input("Confirm Password", type="password", placeholder="Confirm your password")
     st.markdown("")
@@ -40,7 +49,7 @@ if submitted:
     if password != confirm_password:
         st.error("❌ Passwords do not match.")
     else:
-        ok, message = register_user(full_name, email, password)
+        ok, message = register_user(full_name, email, gender, marital, no_of_dependents, self_employed, applicant_income, co_applicant_income, credit_history, property_area, password)
         if ok:
             st.success("✓ Registration successful! You can now login.")
             st.info("Redirecting to login page...")

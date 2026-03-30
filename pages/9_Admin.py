@@ -1,10 +1,17 @@
 import streamlit as st
 from pathlib import Path
 from lib import ui
-from lib.mongo import get_all_eligibility, get_all_users, get_all_feedback
+from lib.mongo import (
+    get_all_eligibility,
+    get_eligibility_by_date_range,
+    get_all_users,
+    get_users_by_date_range,
+    get_all_feedback,
+    get_feedback_by_date_range,
+)
 from PIL import Image
 import io
-from datetime import datetime
+from datetime import datetime, time, timedelta
 import pandas as pd
 
 image = Image.open("assets/logo.png")
@@ -92,11 +99,51 @@ def _clean_feedback(records):
     return pd.DataFrame(rows)
 
 try:
-    @st.cache_data(ttl=120)
-    def _load():
-        return get_all_eligibility(), get_all_users(), get_all_feedback()
+    today = datetime.today().date()
+    default_start = today.replace(day=1)
 
-    all_eligibility, all_users, all_feedbacks = _load()
+    @st.cache_data(ttl=120)
+    def _load_eligibility_reports(start_at: datetime, end_at: datetime, is_all_time: bool):
+        if is_all_time:
+            return get_all_eligibility()
+        return get_eligibility_by_date_range(start_at, end_at)
+
+    @st.cache_data(ttl=120)
+    def _load_users_reports(start_at: datetime, end_at: datetime, is_all_time: bool):
+        if is_all_time:
+            return get_all_users()
+        return get_users_by_date_range(start_at, end_at)
+
+    @st.cache_data(ttl=120)
+    def _load_feedback_reports(start_at: datetime, end_at: datetime, is_all_time: bool):
+        if is_all_time:
+            return get_all_feedback()
+        return get_feedback_by_date_range(start_at, end_at)
+
+    quick_range = st.session_state.get("admin_quick_range", "This Month")
+    from_date = st.session_state.get("admin_from_date", default_start)
+    to_date = st.session_state.get("admin_to_date", today)
+
+    if quick_range == "Today":
+        from_date = today
+        to_date = today
+    elif quick_range == "Last 7 Days":
+        from_date = today - timedelta(days=6)
+        to_date = today
+    elif quick_range == "This Month":
+        from_date = default_start
+        to_date = today
+
+    if from_date > to_date:
+        from_date, to_date = to_date, from_date
+
+    start_dt = datetime.combine(from_date, time.min)
+    end_dt = datetime.combine(to_date, time.max)
+
+    all_eligibility = _load_eligibility_reports(start_dt, end_dt, quick_range == "All Time")
+    all_users = _load_users_reports(start_dt, end_dt, quick_range == "All Time")
+    all_feedbacks = _load_feedback_reports(start_dt, end_dt, quick_range == "All Time")
+
     approved = [r for r in all_eligibility if r.get("result", {}).get("eligible") is True]
     rejected = [r for r in all_eligibility if r.get("result", {}).get("eligible") is False]
 
@@ -134,8 +181,45 @@ try:
             </div>
         """, unsafe_allow_html=True)
 
-    st.markdown("<div style='margin-bottom: 24px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='margin-bottom: 18px;'></div>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #6b7280; margin-bottom: 10px;'>Filter all tables by time range</p>", unsafe_allow_html=True)
 
+    filter_c1, filter_c2, filter_c3 = st.columns([1, 1, 1])
+    with filter_c1:
+        from_date = st.date_input("From Date", value=from_date, key="admin_from_date")
+    with filter_c2:
+        to_date = st.date_input("To Date", value=to_date, key="admin_to_date")
+    with filter_c3:
+        quick_range = st.selectbox(
+            "Quick Range",
+            ["Custom", "Today", "Last 7 Days", "This Month", "All Time"],
+            index=["Custom", "Today", "Last 7 Days", "This Month", "All Time"].index(quick_range),
+            key="admin_quick_range",
+        )
+
+    if quick_range == "Today":
+        from_date = today
+        to_date = today
+    elif quick_range == "Last 7 Days":
+        from_date = today - timedelta(days=6)
+        to_date = today
+    elif quick_range == "This Month":
+        from_date = default_start
+        to_date = today
+
+    if from_date > to_date:
+        st.warning("From Date cannot be later than To Date. Swapping automatically.")
+        from_date, to_date = to_date, from_date
+
+    start_dt = datetime.combine(from_date, time.min)
+    end_dt = datetime.combine(to_date, time.max)
+    all_eligibility = _load_eligibility_reports(start_dt, end_dt, quick_range == "All Time")
+    all_users = _load_users_reports(start_dt, end_dt, quick_range == "All Time")
+    all_feedbacks = _load_feedback_reports(start_dt, end_dt, quick_range == "All Time")
+    approved = [r for r in all_eligibility if r.get("result", {}).get("eligible") is True]
+    rejected = [r for r in all_eligibility if r.get("result", {}).get("eligible") is False]
+
+    st.markdown("<div style='margin-bottom: 24px;'></div>", unsafe_allow_html=True)
     st.markdown("<h2 style='color: #1e293b; margin-top: 0;'>📊 System Data</h2>", unsafe_allow_html=True)
 
     tab_elig, tab_users, tab_feedback = st.tabs(["📋 Eligibility Checks", "👥 Registered Users", "💬 User Feedback"])
@@ -159,8 +243,15 @@ try:
         if display_elig:
             df_elig = _clean_eligibility(display_elig)
             st.dataframe(df_elig, use_container_width=True, height=500)
-            st.caption(f"📊 Showing {len(display_elig)} of {len(all_eligibility)} records | "
-                      f"✅ {len(approved)} approved | ❌ {len(rejected)} rejected")
+            period_label = (
+                "All Time"
+                if quick_range == "All Time"
+                else f"{from_date.strftime('%d %b %Y')} to {to_date.strftime('%d %b %Y')}"
+            )
+            st.caption(
+                f"📊 Range: {period_label} | Showing {len(display_elig)} of {len(all_eligibility)} records | "
+                f"✅ {len(approved)} approved | ❌ {len(rejected)} rejected"
+            )
         else:
             st.info("No eligibility checks found for the selected filter.")
 
