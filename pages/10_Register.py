@@ -35,8 +35,8 @@ with st.form("register_form"):
     marital = st.selectbox("Marital Status",["Select Marital Status", "Single", "Married", "Divorced"],index=0)
     no_of_dependents = st.text_input("Number of Dependents", placeholder="Enter number of dependents", help="Enter 0 if none")
     self_employed = st.selectbox("Self Employed",["Select Employment Type", "Yes", "No"],index=0,)
-    applicant_income = st.text_input("Applicant Income", placeholder="Enter your monthly income")
-    co_applicant_income = st.text_input("Co-Applicant Income", placeholder="Enter co-applicant's monthly income")
+    applicant_income = st.text_input("Applicant Income", placeholder="Enter your Annual income")
+    co_applicant_income = st.text_input("Co-Applicant Income", placeholder="Enter co-applicant's Annual income")
     credit_history = st.selectbox("Credit History Available", ["Select Credit History", "Yes", "No"], index=0)
     property_area= st.selectbox("Property Area", ["Select Property Area", "Rural", "Urban"], index=0)
 
